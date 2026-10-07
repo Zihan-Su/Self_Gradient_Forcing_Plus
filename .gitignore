@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Local environments
+.env
+.venv/
+venv/
+
+# Model/data artifacts
+/checkpoints
+/wan_models
+dataset/
+prompts/vidprom_filtered_extended.txt
+/config.json
+/model_index.json
+logs/
+outputs/
+output/
+output_*/
+eval_runs/
+.rendezvous/
+
+# Runtime products
+*.mp4
+*.log
+.DS_Store
+
+# Hugging Face weights
+/hf_release/
+/hf_weights/
