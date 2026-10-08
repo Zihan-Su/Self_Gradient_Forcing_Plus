@@ -4,6 +4,8 @@ Interactive, streaming [SGF+](https://github.com/Zihan-Su/Self_Gradient_Forcing_
 powered by [Reactor](https://reactor.inc). Describe a scene, optionally upload a reference
 image, and watch a continuous video while updating its prompt.
 
+![SGF+ running interactively in the Reactor demo](assets/demo.png)
+
 What this integration adds to SGF+:
 
 - **A model service on your GPU.** The [Reactor Runtime](https://github.com/reactor-team/reactor-runtime)
