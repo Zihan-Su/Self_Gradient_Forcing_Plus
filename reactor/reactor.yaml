@@ -1,0 +1,34 @@
+$schema: reactor/v2
+
+model:
+  name: sgf-plus
+  version: v0.2.1
+  description: Generate long silent videos from text and optional uploaded images with SGF+.
+  resources:
+    gpu:
+      type: NVIDIA_B200
+      count: 1
+    cpu:
+      request: "4"
+      limit: "16"
+    memory:
+      request: 32Gi
+      limit: 96Gi
+
+runtime:
+  import: sgf_plus:SGFPlus
+  config: sgf_plus.yaml
+  weights_path: ~/.cache/reactor_registry/sgf-plus
+
+build:
+  runtime_version: "3.8.1"
+  python_version: "3.12"
+  cuda_version: "12.8.1"
+  python_requirements: requirements.txt
+  system_packages: [git, build-essential, libgl1, libglib2.0-0]
+  run:
+    - git clone https://github.com/Zihan-Su/Self_Gradient_Forcing_Plus.git /opt/sgf-plus && git -C /opt/sgf-plus checkout 14cda9bb35f87000fbc11138a5170002d213effe
+    - pip install --no-build-isolation flash-attn==2.8.3
+  runtime_env:
+    TOKENIZERS_PARALLELISM: "false"
+    PYTORCH_ALLOC_CONF: expandable_segments:True

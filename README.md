@@ -150,6 +150,40 @@ NUM_OUTPUT_FRAMES=963 SEED=42 OUTPUT_ROOT=outputs/demo \
 
 For trained checkpoints, pass the release setting first and the produced `logs/.../checkpoint_model_*/model.pt` path as the second argument. The script uses EMA weights by default; set `USE_EMA=0` to use the non-EMA `generator` weights.
 
+## ⚡ Inference with Reactor Runtime
+
+The [`reactor/`](reactor/README.md) integration serves SGF+ as an interactive video
+model with [Reactor Runtime](https://reactor.inc) and a browser frontend. It uses
+the released chunkwise checkpoint on one NVIDIA B200, supports text and optional
+reference images, and lets you update the prompt while generation continues.
+
+Install the [Reactor CLI](reactor/README.md#1-install-the-reactor-cli), Docker and
+the NVIDIA Container Toolkit. From the repository root, build and start the
+service on an available GPU; inference weights download automatically on first startup:
+
+```bash
+cd reactor
+reactor build
+reactor run --gpus device=0 --port 8080
+```
+
+Once `http://localhost:8080/health` reports `"state":"available"`, open another
+terminal at the repository root and start the frontend (Node.js 22.12+ and npm):
+
+```bash
+cd reactor/demo
+npm ci
+npm run dev
+```
+
+Open the printed URL, normally [http://localhost:5173](http://localhost:5173),
+set **Runtime URL** to `http://localhost:8080`, and click **Connect**. Enter a
+prompt, optionally choose an image, then click **Start new video**. Use
+**Update prompt** to change subsequent chunks and **Pause / Resume** to hold or
+continue the same video. Playback stays at the original 16 FPS export rate.
+See the [Reactor guide](reactor/README.md) for controls, validation and remote
+connection requirements, including WebRTC over SSH.
+
 ## 🏋️ Training
 
 ### Chunkwise SGF+

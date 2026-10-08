@@ -1,0 +1,149 @@
+:root {
+  font-family: Inter, system-ui, sans-serif;
+  color: #e9e3dc;
+  background: #151411;
+  font-synthesis: none;
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+textarea {
+  font: inherit;
+}
+button {
+  border: 1px solid #4b4034;
+  border-radius: 7px;
+  background: #2b261f;
+  color: inherit;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+button.primary {
+  background: #89603c;
+  border-color: #b28355;
+}
+header {
+  height: 64px;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #39342d;
+}
+header strong {
+  flex: 1;
+  font-size: 20px;
+}
+header strong span {
+  font-weight: 400;
+  font-size: 14px;
+  color: #ad9e8d;
+}
+.workspace {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  min-height: calc(100vh - 126px);
+}
+aside {
+  padding: 24px;
+  border-right: 1px solid #39342d;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+h1 {
+  font-size: 21px;
+  margin: 0;
+}
+p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #b5aa9e;
+  margin: 0;
+}
+label {
+  font-size: 13px;
+  display: grid;
+  gap: 8px;
+}
+input,
+textarea {
+  width: 100%;
+  background: #1d1b17;
+  border: 1px solid #4b4034;
+  border-radius: 5px;
+  padding: 10px;
+  color: inherit;
+}
+textarea {
+  resize: vertical;
+}
+.stage {
+  background: #050505;
+  position: relative;
+  min-height: 350px;
+}
+.video {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+}
+.placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #b5aa9e;
+  pointer-events: none;
+}
+.endpoint {
+  padding: 10px 24px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid #39342d;
+}
+.endpoint label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+.endpoint input {
+  max-width: 420px;
+}
+[role="alert"] {
+  color: #ffb1a0;
+  background: #492720;
+  padding: 12px;
+  border-radius: 5px;
+}
+@media (max-width: 800px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+  .stage {
+    grid-row: 1;
+    min-height: 340px;
+  }
+  aside {
+    border-right: 0;
+  }
+  header {
+    padding: 12px;
+  }
+  .endpoint {
+    padding: 10px;
+  }
+}
