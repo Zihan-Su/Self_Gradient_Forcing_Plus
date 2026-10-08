@@ -40,10 +40,12 @@ if [[ "$VARIANT" == "framewise" ]]; then
     KV_CACHE_SINK="${KV_CACHE_SINK:-4}"
     KV_CACHE_FIFO_FRAMES="${KV_CACHE_FIFO_FRAMES:-16}"
     KV_CACHE_CURRENT_FRAMES="${KV_CACHE_CURRENT_FRAMES:-1}"
+    KV_CACHE_TRAIN_FRAMES=21
 else
     KV_CACHE_SINK="${KV_CACHE_SINK:-3}"
     KV_CACHE_FIFO_FRAMES="${KV_CACHE_FIFO_FRAMES:-6}"
     KV_CACHE_CURRENT_FRAMES="${KV_CACHE_CURRENT_FRAMES:-3}"
+    KV_CACHE_TRAIN_FRAMES=12
 fi
 KV_CACHE_MAX_FRAMES=$((KV_CACHE_SINK + KV_CACHE_FIFO_FRAMES + KV_CACHE_CURRENT_FRAMES))
 
@@ -104,7 +106,7 @@ COMMON_ARGS=(
     --long_video
     --kv_cache_max_frames "$KV_CACHE_MAX_FRAMES"
     --kv_cache_sink "$KV_CACHE_SINK"
-    --kv_cache_train_frames 21
+    --kv_cache_train_frames "$KV_CACHE_TRAIN_FRAMES"
     --kv_cache_position_mode top_aligned
     "${EMA_ARGS[@]}"
 )
