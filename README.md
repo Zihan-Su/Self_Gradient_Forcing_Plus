@@ -6,7 +6,7 @@
 
 <p>
   <a href="https://zihan-su.github.io/self-gradient-forcing-plus"><img src="https://img.shields.io/badge/Project-Page-Green" alt="Project Page"></a> &nbsp;
-  <img src="https://img.shields.io/badge/arXiv-Coming%20soon-b31b1b.svg" alt="arXiv: Coming soon"> &nbsp;
+  <a href="https://arxiv.org/abs/2610.10429"><img src="https://img.shields.io/badge/arXiv-2610.10429-b31b1b.svg" alt="arXiv: 2610.10429"></a> &nbsp;
   <a href="https://huggingface.co/ZihanSu/Self_Gradient_Forcing_Plus"><img src="https://img.shields.io/badge/🤗%20Hugging%20Face-Models-yellow" alt="Hugging Face"></a> &nbsp;
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-blue" alt="License"></a>
 </p>
@@ -210,11 +210,13 @@ This project is released under the Apache-2.0 license.
 ## 📚 Citation
 
 ```bibtex
-@misc{su2026sgfplus,
-  title  = {{SGF+}: Decoupling Gradient Flows for Autoregressive Video Generation},
-  author = {Su, Zihan and Zhuang, Junhao and Li, Yaowei and Lu, Siwen and Li, Haoran and
-            Li, Lingen and Wu, Haoyu and Jin, Weiyang and Zhang, Songchun and
-            Huang, Haoyang and Yuan, Chun and Xue, Zeyue and Duan, Nan},
-  year   = {2026}
+@misc{su2026sgfdecouplinggradientflows,
+      title={SGF+: Decoupling Gradient Flows for Autoregressive Video Generation}, 
+      author={Zihan Su and Junhao Zhuang and Yaowei Li and Siwen Lu and Haoran Li and Lingen Li and Haoyu Wu and Weiyang Jin and Songchun Zhang and Haoyang Huang and Chun Yuan and Zeyue Xue and Nan Duan},
+      year={2026},
+      eprint={2610.10429},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2610.10429}, 
 }
 ```
