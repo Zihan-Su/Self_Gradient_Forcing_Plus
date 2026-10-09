@@ -107,7 +107,7 @@ COMMON_ARGS=(
     --kv_cache_max_frames "$KV_CACHE_MAX_FRAMES"
     --kv_cache_sink "$KV_CACHE_SINK"
     --kv_cache_train_frames "$KV_CACHE_TRAIN_FRAMES"
-    --kv_cache_position_mode top_aligned
+    --kv_cache_position_mode contiguous
     "${EMA_ARGS[@]}"
 )
 
