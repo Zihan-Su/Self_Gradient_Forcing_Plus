@@ -8,7 +8,7 @@
   <a href="https://zihan-su.github.io/self-gradient-forcing-plus"><img src="https://img.shields.io/badge/Project-Page-Green" alt="Project Page"></a> &nbsp;
   <a href="https://arxiv.org/abs/2610.10429"><img src="https://img.shields.io/badge/arXiv-2610.10429-b31b1b.svg" alt="arXiv: 2610.10429"></a> &nbsp;
   <a href="https://huggingface.co/ZihanSu/Self_Gradient_Forcing_Plus"><img src="https://img.shields.io/badge/🤗%20Hugging%20Face-Models-yellow" alt="Hugging Face"></a> &nbsp;
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-blue" alt="License"></a>
+  <a href="https://zhuanlan.zhihu.com/p/2091909097872430934"><img src="https://img.shields.io/badge/Blog-Read-blue" alt="Blog Read"></a>
 </p>
 
 <p>
