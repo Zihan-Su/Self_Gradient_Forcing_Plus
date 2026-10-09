@@ -186,6 +186,10 @@ connection requirements, including WebRTC over SSH.
 
 ## 🏋️ Training
 
+All training runs reported in the paper use **64 GPUs without gradient accumulation**.
+
+**Reference training budget:** **1,900 steps for framewise SGF+** and **700 steps for chunkwise SGF+**. The number of training steps needed may vary slightly across random seeds.
+
 ### Chunkwise SGF+
 
 ```bash
