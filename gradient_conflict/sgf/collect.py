@@ -1,4 +1,3 @@
-"""Collect context-writing and denoising weight gradients."""
 import argparse
 from contextlib import nullcontext
 import gc
@@ -14,7 +13,7 @@ import numpy as np
 import torch
 from omegaconf import OmegaConf
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 os.chdir(ROOT)
 
@@ -29,7 +28,7 @@ def main():
     parser.add_argument('--checkpoint', type=Path, required=True)
     parser.add_argument('--config', type=Path, default=Path('configs/self_gradient_forcing_framewise.yaml'))
     parser.add_argument('--prompt-indices', type=int, nargs='+', required=True)
-    parser.add_argument('--manifest', type=Path, default=Path('gradient_conflict/prompts.jsonl'))
+    parser.add_argument('--manifest', type=Path, default=Path('gradient_conflict/sgf/prompts.jsonl'))
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--exits', type=int, nargs='+', default=[0, 1, 2, 3])
     parser.add_argument('--sketch-size', type=int, default=4096)
@@ -97,7 +96,8 @@ def main():
         out_features, in_features = module.weight.shape
         numel = module.weight.numel()
         k = min(args.sketch_size, numel)
-        rng = np.random.default_rng(stable_seed(name))
+        seed = stable_seed(name)
+        rng = np.random.default_rng(seed)
         index = rng.choice(numel, size=k, replace=False)
         coord_indices[name] = torch.from_numpy(index.astype(np.int64)).to(device)
         parts = name.split('.')
@@ -109,7 +109,7 @@ def main():
             layer=int(parts[2]), family=family, projection=projection,
             shape=[int(out_features), int(in_features)], numel=int(numel),
             sketch_size=int(k), sketch_scale=math.sqrt(numel / k),
-            sketch_seed=stable_seed(name))
+            sketch_seed=seed)
 
     def make_forward_hook(name):
         def forward_hook(module, inputs, output):
@@ -250,9 +250,9 @@ def main():
                 raise RuntimeError(f'Unconsumed weight-gradient checks: {sorted(pending_combined)}')
             if set(records) != set(names):
                 raise RuntimeError(f'Missing hooks: {sorted(set(names) - set(records))}')
-            errors = {name: records[name]['reconstruction_relative_error'] for name in names}
-            if max(errors.values()) > .025:
-                raise RuntimeError(f'Gradient partition verification failed: {max(errors.values())}')
+            max_error = max(records[name]['reconstruction_relative_error'] for name in names)
+            if max_error > .025:
+                raise RuntimeError(f'Gradient partition verification failed: {max_error}')
             result = dict(
                 checkpoint_step=checkpoint_step, prompt_index=prompt_index, exit_index=exit_index,
                 generator_timestep=float(pipe.denoising_step_list[exit_index]),
@@ -266,7 +266,7 @@ def main():
             temporary.replace(out_file)
             print('SAVED', out_file, 'seconds', result['elapsed_seconds'],
                   'peak_gpu_gb', result['peak_gpu_gb'],
-                  'max_partition_error', max(errors.values()), flush=True)
+                  'max_partition_error', max_error, flush=True)
             del pred, loss, logs, result, noise
             model.generator.zero_grad(set_to_none=True)
             records.clear()

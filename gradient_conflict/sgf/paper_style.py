@@ -1,4 +1,3 @@
-"""Shared styling for gradient-conflict figures."""
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.text import Text
@@ -27,14 +26,10 @@ def enlarge(fig):
         ax.tick_params(axis='both', labelsize=10.8)
         for tick in ax.get_xticklabels()+ax.get_yticklabels():
             tick.set_fontfamily('DejaVu Serif')
-        legend = ax.get_legend()
-        if legend:
-            for text in legend.get_texts():
-                text.set_fontsize(10.2)
 
 
 
-def match_reference_axes(fig):
+def align_axes(fig):
     positions = [ax.get_position().frozen() for ax in fig.axes]
     fig.set_size_inches(6.875, 3.17)
     for ax, bounds in zip(fig.axes, positions):
@@ -144,48 +139,20 @@ def distributions(embeddings, count):
         ax.spines["bottom"].set_color("#333333")
     
     
-    legend_handles = [
-        Line2D(
-            [0],
-            [0],
-            marker="o",
-            linestyle="none",
-            markerfacecolor=CONTEXT_COLOR,
-            markeredgecolor="white",
-            markeredgewidth=0.2,
-            markersize=4.4,
-            label=r"Context ($t_0$)",
-        )
-    ]
-    legend_handles += [
-        Line2D(
-            [0],
-            [0],
-            marker=marker,
-            linestyle="none",
-            markerfacecolor=color,
-            markeredgecolor="white",
-            markeredgewidth=0.2,
-            markersize=4.4,
-            label=rf"Denoising ($t_{{{4 - index}}}$)",
-        )
-        for index, (color, marker) in enumerate(zip(GEN_COLORS, GEN_MARKERS))
-    ]
-    legend_handles = [legend_handles[0], *reversed(legend_handles[1:])]
-    
+    legend_handles = [Line2D([0], [0], marker=marker, linestyle='none',
+        markerfacecolor=color, markeredgecolor='white', markeredgewidth=.2,
+        markersize=4.4, label=label) for color, marker, label in
+        [(CONTEXT_COLOR, 'o', r'Context ($t_0$)')] +
+        [(color, marker, rf'Denoising ($t_{{{4-index}}}$)')
+         for index, (color, marker) in enumerate(zip(GEN_COLORS, GEN_MARKERS))]]
     fig.subplots_adjust(left=0.065, right=0.992, top=0.93, bottom=0.20, wspace=0.18)
     
     enlarge(fig)
-    handles = legend_handles
-    fig.legend(handles=[handles[i] for i in (0,3,1,4,2)],
+    fig.legend(handles=[legend_handles[i] for i in (0,2,4,1,3)],
                loc='lower center', bbox_to_anchor=(.5,.002), ncol=3,
                frameon=False, fontsize=10.2, handletextpad=.25,
                columnspacing=.8, labelspacing=.35, borderaxespad=0)
-    fig.subplots_adjust(left=.065, right=.992, top=.93, bottom=.20, wspace=.18)
     for ax, title in zip(fig.axes, ('Attention', 'FFN')):
-        ax.set_xlabel('')
-        ax.set_ylabel('')
-        ax.set_title('', loc='left')
         ax.set_title(title, loc='center', fontsize=12.6, fontfamily='DejaVu Serif', fontweight='normal', pad=10)
     old_height = fig.get_figheight()
     extra_bottom = .12
@@ -243,7 +210,7 @@ def paired(values):
     fig.set_size_inches(6.875, 2.6)
     enlarge(fig)
     fig.tight_layout(pad=.8, w_pad=1.5)
-    match_reference_axes(fig)
+    align_axes(fig)
     return finish(fig, 'paired')
 
 def means(data):

@@ -1,4 +1,3 @@
-"""Exact grouped gradient cosine statistics."""
 import argparse
 import csv
 import json
