@@ -33,6 +33,8 @@
 
 ## 🔥 News
 
+- **2026-10-9**: We release the code for reproducing the gradient-conflict phenomena observed at the SGF and teacher-forcing initialization checkpoints. See the [reproduction guide](https://github.com/Zihan-Su/Self_Gradient_Forcing_Plus/tree/main/gradient_conflict). In fact, beyond Wan2.1-1.3B, we have also observed this phenomenon in [LTX-2.5](https://huggingface.co/Lightricks/LTX-2.5).
+
 - **2026-10-7**: Paper, model checkpoints, inference scripts, and training code are publicly released.
 
 ## 🎬 Video Comparisons
