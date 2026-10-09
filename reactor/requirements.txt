@@ -1,0 +1,28 @@
+# Model dependencies resolved with Reactor Runtime during `reactor build`.
+# `build.runtime_version` in reactor.yaml selects the Runtime release.
+
+# This folder's direct imports.
+numpy>=2.1
+Pillow>=11
+PyYAML>=6
+torch==2.8.0
+huggingface-hub>=0.30,<1
+omegaconf>=2.3
+
+# Pinned upstream checkout's inference dependencies.
+torchvision==0.23.0
+diffusers==0.31.0
+transformers==4.51.3
+accelerate>=1.1.1
+einops>=0.8
+easydict>=1.13
+ftfy>=6.3
+sentencepiece>=0.2
+safetensors>=0.4
+tqdm>=4.66
+
+# Build-only tools for the native FlashAttention extension.
+packaging
+setuptools
+wheel
+ninja
