@@ -259,4 +259,11 @@ This project is released under the Apache-2.0 license.
       primaryClass={cs.CV},
       url={https://arxiv.org/abs/2610.10429}, 
 }
+
+@article{zhuang2026self,
+  title={Self Gradient Forcing: Native Long Video Extrapolation},
+  author={Zhuang, Junhao and Zhang, Shiyi and Bian, Yuxuan and Li, Yaowei and Luo, Yawen and Liu, Yijun and Jin, Weiyang and Zhang, Songchun and He, Xianglong and Zhang, Xuying and others},
+  journal={arXiv preprint arXiv:2607.20368},
+  year={2026}
+}
 ```
