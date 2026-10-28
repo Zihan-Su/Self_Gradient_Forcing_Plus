@@ -108,10 +108,10 @@ def distributions(embeddings, timesteps):
     for ax,b in zip(fig.axes,positions):ax.set_position([b.x0,(b.y0*old+.12)/(old+.12),b.width,b.height*old/(old+.12)])
     format_panel(fig,'a_tsne')
 
-    fig.legend(handles=[Line2D([],[],ls='',marker='o',color='#009E73',markersize=9,label=r'Context ($t_0=0$)')],loc='center',bbox_to_anchor=(.255,.118),fontsize=17,frameon=False,handletextpad=.2)
-    cax=fig.add_axes([.57,.102,.38,.025]);cb=fig.colorbar(ScalarMappable(norm=Normalize(0,1000),cmap='YlOrRd'),cax=cax,orientation='horizontal')
-    cb.solids.set_rasterized(False);cb.solids.set_edgecolor('face');cb.set_ticks([0,500,1000]);cb.ax.tick_params(labelsize=12,pad=2,length=1.5);cb.outline.set_linewidth(.4)
-    fig.text(.76,.157,r'Denoising ($t$)',ha='center',va='center',fontsize=17)
+    fig.legend(handles=[Line2D([],[],ls='',marker='o',color='#009E73',markersize=9,label=r'Context ($t_0=0$)')],loc='center',bbox_to_anchor=(.255,.118-9/(72*fig.get_figheight())),fontsize=17*1.2,frameon=False,handletextpad=.2)
+    cax=fig.add_axes([.57,.102-9/(72*fig.get_figheight()),.38,.025]);cb=fig.colorbar(ScalarMappable(norm=Normalize(0,1000),cmap='YlOrRd'),cax=cax,orientation='horizontal')
+    cb.solids.set_rasterized(False);cb.solids.set_edgecolor('face');cb.set_ticks([0,500,1000]);cb.ax.tick_params(labelsize=12*1.3,pad=6,length=1.5);cb.outline.set_linewidth(.4)
+    fig.text(.76,.157-5/(72*fig.get_figheight()),r'Denoising ($t$)',ha='center',va='center',fontsize=17*1.2)
     return fig
 
 def means(data):
@@ -133,7 +133,7 @@ def means(data):
         ax.set_xlim(-.58,1.25);ax.set_ylim(-.13,1.53);ax.set_aspect('equal')
         ax.set_xticks([]);ax.set_yticks([])
         for spine in ax.spines.values():spine.set_visible(False)
-    fig.legend(handles=[Line2D([0],[0],color=blue,lw=2.5,label='Mean context gradient'),Line2D([0],[0],color=orange,lw=2.5,label='Mean denoising gradient')],loc='lower center',bbox_to_anchor=(.52,.018),ncol=1,frameon=False,fontsize=10.2*1.32,labelspacing=.35)
+    fig.legend(handles=[Line2D([0],[0],color=blue,lw=2.5,label='Mean context gradient'),Line2D([0],[0],color=orange,lw=2.5,label='Mean denoising gradient')],loc='lower center',bbox_to_anchor=(.52,.018-10/(72*H)),ncol=1,frameon=False,fontsize=10.2*1.32,labelspacing=.35)
 
     restyle(fig,'b_mean_gradient')
     return fig
@@ -165,4 +165,15 @@ def paired(values, timesteps):
         ax.axhline(0,color='#6BAED6',lw=1.45,ls=(0,(5,3)))
         ax.set_xlim(1000,0);ax.set_xticks([1000,500,0], [1000,500,0]);ax.set_yticks([-.8,-.4,0,.2]);ax.get_xticklabels()[-1].set_ha('right')
     fig.set_size_inches(6.875,2.6);enlarge(fig);fig.tight_layout(pad=.8,w_pad=1.5);align_axes(fig);format_panel(fig,'b_timestep_cosine')
+    # Match the SGF panel: lower plots, but leave their titles fixed.
+    shift = 8 / (72 * fig.get_figheight())
+    for ax in axes:
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0 - shift, box.width, box.height])
+        ax.set_title(ax.get_title(), fontsize=ax.title.get_fontsize(), pad=18)
+        ax.xaxis.label.set_fontsize(16.83)
+        ax.yaxis.label.set_fontsize(16.83)
+    label = axes[0].yaxis.label
+    x, y = label.get_position()
+    label.set_position((x, y - shift))
     return fig

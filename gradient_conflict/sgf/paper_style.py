@@ -162,7 +162,13 @@ def distributions(embeddings, count):
         ax.set_position([bounds.x0,
                          (bounds.y0 * old_height + extra_bottom) / (old_height + extra_bottom),
                          bounds.width, bounds.height * old_height / (old_height + extra_bottom)])
-    return finish(fig, 'distributions')
+    fig = finish(fig, 'distributions')
+    for legend in fig.legends:
+        for text in legend.get_texts():
+            text.set_fontsize(text.get_fontsize() * 1.25)
+        for handle in legend.legend_handles:
+            handle.set_markersize(handle.get_markersize() * 1.25)
+    return fig
     
 def paired(values):
     plt.rcParams.update({
@@ -211,7 +217,19 @@ def paired(values):
     enlarge(fig)
     fig.tight_layout(pad=.8, w_pad=1.5)
     align_axes(fig)
-    return finish(fig, 'paired')
+    fig = finish(fig, 'paired')
+    # Move the plots down 8 pt while keeping the titles and panel caption fixed.
+    shift = 8 / (72 * fig.get_figheight())
+    for ax in axes:
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0 - shift, box.width, box.height])
+        ax.set_title(ax.get_title(), fontsize=ax.title.get_fontsize(), pad=18)
+        ax.xaxis.label.set_fontsize(16.83)
+        ax.yaxis.label.set_fontsize(16.83)
+    label = axes[0].yaxis.label
+    x, y = label.get_position()
+    label.set_position((x, y - shift))
+    return fig
 
 def means(data):
     plt.rcParams.update({'font.family':'DejaVu Serif','pdf.fonttype':42,'svg.fonttype':'none'})
@@ -236,7 +254,7 @@ def means(data):
     height=fig.get_figheight(); final=332/72
     positions=[ax.get_position().frozen() for ax in fig.axes]
     for legend in fig.legends:
-        legend.set_bbox_to_anchor((.52,(.018*height+final-height)/final))
+        legend.set_bbox_to_anchor((.52,(.018*height+final-height-10/72)/final))
     fig.set_size_inches(W,final)
     for ax,box in zip(fig.axes,positions):
         ax.set_position([box.x0,(box.y0*height+final-height)/final,box.width,box.height*height/final])
