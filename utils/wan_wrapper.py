@@ -121,8 +121,16 @@ class WanDiffusionWrapper(torch.nn.Module):
             local_attn_size=-1,
             sink_size=0,
             dual_full_expert=None,
+            dual_lora=None,
     ):
         super().__init__()
+
+        full_enabled = dual_full_expert and dual_full_expert.get("enabled", False)
+        lora_enabled = dual_lora and dual_lora.get("enabled", False)
+        if full_enabled and lora_enabled:
+            raise ValueError("Choose either dual_full_expert or dual_lora, not both")
+        if lora_enabled and not is_causal:
+            raise ValueError("Dual LoRA is only supported by the causal generator")
 
         if is_causal:
             self.model = CausalWanModel.from_pretrained(
@@ -137,6 +145,15 @@ class WanDiffusionWrapper(torch.nn.Module):
             print(
                 "Enabled generation/memory full-finetune experts with explicit role routing; "
                 f"added {memory_params:,} memory-expert parameters"
+            )
+        if lora_enabled:
+            trainable_params = self.model.enable_dual_lora(
+                rank=dual_lora.get("rank", 256),
+                alpha=dual_lora.get("alpha", 256),
+            )
+            print(
+                "Enabled Denoiser/Context Writer LoRAs on frozen Attention and FFN projections; "
+                f"{trainable_params:,} trainable adapter parameters"
             )
         self.model.eval()
 

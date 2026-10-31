@@ -4,7 +4,7 @@ from utils.dataset import cycle
 from utils.dataset import TextDataset
 from utils.distributed import EMA_FSDP, fsdp_wrap, fsdp_state_dict, launch_distributed_job
 from utils.misc import set_seed
-from utils.checkpoint import normalize_state_dict, initialize_memory_expert
+from utils.checkpoint import normalize_state_dict, initialize_memory_expert, load_dual_lora_checkpoint, dual_lora_state_dict
 import torch.distributed as dist
 from omegaconf import OmegaConf
 from model import DMD
@@ -62,6 +62,14 @@ class Trainer:
 
         # Save pretrained model state_dicts to CPU
         self.fake_score_state_dict_cpu = self.model.fake_score.state_dict()
+
+        self.dual_lora_enabled = getattr(self.model.generator.model, "dual_lora_enabled", False)
+        if self.dual_lora_enabled:
+            if not getattr(config, "generator_ckpt", None):
+                raise ValueError("Dual LoRA requires a single-expert TF generator_ckpt")
+            self.dual_lora_metadata = load_dual_lora_checkpoint(
+                self.model.generator, config.generator_ckpt,
+                base_checkpoint=getattr(config.model_kwargs.dual_lora, "base_checkpoint", None))
 
         self.model.generator = fsdp_wrap(
             self.model.generator,
@@ -149,7 +157,7 @@ class Trainer:
 
         ##############################################################################################################
         # 7. (If resuming) Load the model and optimizer, lr_scheduler, ema's statedicts
-        if getattr(config, "generator_ckpt", False):
+        if getattr(config, "generator_ckpt", False) and not self.dual_lora_enabled:
             print(f"Loading pretrained generator from {config.generator_ckpt}")
             state_dict = torch.load(config.generator_ckpt, map_location="cpu")
             for key in ("generator", "model", "generator_ema"):
@@ -165,7 +173,8 @@ class Trainer:
 
         # Initialize EMA from the restored weights.
         if self.step >= config.ema_start_step and ema_weight and ema_weight > 0:
-            self.generator_ema = EMA_FSDP(self.model.generator, decay=ema_weight)
+            self.generator_ema = EMA_FSDP(self.model.generator, decay=ema_weight,
+                                          trainable_only=self.dual_lora_enabled)
 
         self.max_grad_norm_generator = getattr(config, "max_grad_norm_generator", 10.0)
         self.max_grad_norm_critic = getattr(config, "max_grad_norm_critic", 10.0)
@@ -180,6 +189,11 @@ class Trainer:
         state_dict = {"generator": generator_state_dict, "step": self.step}
         if self.generator_ema is not None:
             state_dict["generator_ema"] = self.generator_ema.full_state_dict(self.model.generator)
+        if self.dual_lora_enabled:
+            state_dict["dual_lora"] = self.dual_lora_metadata
+            for key in ("generator", "generator_ema"):
+                if key in state_dict:
+                    state_dict[key] = dual_lora_state_dict(state_dict[key])
         if getattr(self.config, "save_critic", False):
             state_dict["critic"] = fsdp_state_dict(self.model.fake_score)
 
@@ -319,7 +333,8 @@ class Trainer:
             # Create EMA params (if not already created)
             if (self.step >= self.config.ema_start_step) and \
                     (self.generator_ema is None) and (self.config.ema_weight > 0):
-                self.generator_ema = EMA_FSDP(self.model.generator, decay=self.config.ema_weight)
+                self.generator_ema = EMA_FSDP(self.model.generator, decay=self.config.ema_weight,
+                                              trainable_only=self.dual_lora_enabled)
 
             # Save the model
             if (not self.config.no_save) and (self.step - start_step) > 0 and self.step % self.config.log_iters == 0:

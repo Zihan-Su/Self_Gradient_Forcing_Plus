@@ -43,7 +43,8 @@ class BaseModel(nn.Module):
         self.fake_model_name = getattr(args, "fake_name", "Wan2.1-T2V-1.3B")
         self.iscausal = getattr(args, "causal", True)
         self.generator = WanDiffusionWrapper(**getattr(args, "model_kwargs", {}), is_causal=self.iscausal)
-        self.generator.model.requires_grad_(True)
+        if not getattr(self.generator.model, "dual_lora_enabled", False):
+            self.generator.model.requires_grad_(True)
 
         self.real_score = WanDiffusionWrapper(model_name=self.real_model_name, is_causal=False)
         self.real_score.model.requires_grad_(False)

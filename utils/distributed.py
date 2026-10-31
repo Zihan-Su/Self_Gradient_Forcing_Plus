@@ -89,21 +89,25 @@ def launch_distributed_job(backend: str = "nccl"):
 
 
 class EMA_FSDP:
-    def __init__(self, fsdp_module: torch.nn.Module, decay: float = 0.999):
+    def __init__(self, fsdp_module: torch.nn.Module, decay: float = 0.999, trainable_only: bool = False):
         self.decay = decay
+        self.trainable_only = trainable_only
         self.shadow = {}
         self._init_shadow(fsdp_module)
 
     @torch.no_grad()
     def _init_shadow(self, fsdp_module):
         for n, p in fsdp_module.module.named_parameters():
+            if self.trainable_only and not p.requires_grad:
+                continue
             self.shadow[n] = p.detach().clone().float().cpu()
 
     @torch.no_grad()
     def update(self, fsdp_module):
         d = self.decay
         for n, p in fsdp_module.module.named_parameters():
-            self.shadow[n].mul_(d).add_(p.detach().float().cpu(), alpha=1. - d)
+            if n in self.shadow:
+                self.shadow[n].mul_(d).add_(p.detach().float().cpu(), alpha=1. - d)
 
     # Optional helpers ---------------------------------------------------
     def state_dict(self):
@@ -121,14 +125,17 @@ class EMA_FSDP:
     def full_state_dict(self, fsdp_module):
         live_state = {}
         for n, p in fsdp_module.module.named_parameters():
-            live_state[n] = p.detach().clone()
+            if n in self.shadow:
+                live_state[n] = p.detach().clone()
         for n, p in fsdp_module.module.named_parameters():
             if n in self.shadow:
                 p.data.copy_(self.shadow[n].to(dtype=p.dtype, device=p.device))
 
-        checkpoint = fsdp_state_dict(fsdp_module)
-        for n, p in fsdp_module.module.named_parameters():
-            if n in live_state:
-                p.data.copy_(live_state[n].to(dtype=p.dtype, device=p.device))
+        try:
+            checkpoint = fsdp_state_dict(fsdp_module)
+        finally:
+            for n, p in fsdp_module.module.named_parameters():
+                if n in live_state:
+                    p.data.copy_(live_state[n].to(dtype=p.dtype, device=p.device))
 
         return checkpoint

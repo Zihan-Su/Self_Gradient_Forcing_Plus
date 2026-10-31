@@ -32,6 +32,7 @@ from pipeline import (
 )
 from utils.dataset import TextDataset, TextImagePairDataset
 from utils.misc import set_seed
+from utils.checkpoint import load_dual_lora_checkpoint
 
 from demo_utils.memory import gpu, get_cuda_free_memory_gb, DynamicSwapInstaller
 
@@ -95,7 +96,13 @@ else:
     # Multi-step diffusion inference
     pipeline = CausalDiffusionInferencePipeline(config, device=device)
 
-if args.checkpoint_path:
+if getattr(pipeline.generator.model, "dual_lora_enabled", False):
+    if not args.checkpoint_path:
+        raise ValueError("Dual LoRA inference requires --checkpoint_path")
+    load_dual_lora_checkpoint(
+        pipeline.generator, args.checkpoint_path, use_ema=args.use_ema,
+        base_checkpoint=getattr(config.model_kwargs.dual_lora, "base_checkpoint", None))
+elif args.checkpoint_path:
     state_dict = torch.load(args.checkpoint_path, map_location="cpu")
     key = 'generator_ema' if args.use_ema else 'generator'
     gen_sd = state_dict[key]

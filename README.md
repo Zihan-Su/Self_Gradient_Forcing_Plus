@@ -194,7 +194,7 @@ All training runs reported in the paper use **64 GPUs without gradient accumulat
 
 **Reference training budget:** **1,900 steps for framewise SGF+** and **700 steps for chunkwise SGF+**. The number of training steps needed may vary slightly across random seeds.
 
-**Parameter configuration:** In the paper, we use two sets of full model parameters, one for each task. When adapting SGF+ to your own model, you can instead use two sets of LoRA adapters in the attention and FFN layers, with each set dedicated to one task.
+**Parameter configuration:** In the paper, we use two sets of full model parameters, one for each task. *When applying SGF+ to larger-scale models, we recommend using two sets of LoRA adapters in the attention and FFN layers, with each set dedicated to one task. We provide example code and configurations for this dual-LoRA setup. See the dual-LoRA examples for [chunkwise_dual_lora](https://github.com/Zihan-Su/Self_Gradient_Forcing_Plus/blob/main/configs/sgf_plus_chunkwise_lora.yaml) and [framewise_dual_lora](https://github.com/Zihan-Su/Self_Gradient_Forcing_Plus/blob/main/configs/sgf_plus_framewise_lora.yaml).*
 
 ### Chunkwise SGF+
 

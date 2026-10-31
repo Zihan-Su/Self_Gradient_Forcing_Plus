@@ -1,4 +1,5 @@
 from wan.modules.attention import attention, flash_attention
+from wan.modules.dual_lora import DualLoRALinear
 from wan.modules.model import (
     WanRMSNorm,
     rope_apply,
@@ -82,7 +83,7 @@ class MemoryRoutedFFN(nn.Sequential):
 
 
 def _memory_routed_linear(linear, x, memory_token_count):
-    if isinstance(linear, DualFullExpertLinear):
+    if isinstance(linear, (DualFullExpertLinear, DualLoRALinear)):
         return linear(x, memory_token_count)
     return linear(x)
 
@@ -101,6 +102,8 @@ def _memory_routed_norm(norm, x, memory_token_count):
 
 
 def _memory_only_linear(linear, x):
+    if isinstance(linear, DualLoRALinear):
+        return linear(x, memory_token_count=x.shape[1])
     return F.linear(x, linear.memory_weight, linear.memory_bias)
 
 
@@ -676,7 +679,7 @@ class CausalWanAttentionBlock(nn.Module):
                 .unflatten(dim=1, sizes=(num_frames, frame_seqlen))
                 * (1 + e[4]) + e[3]
             ).flatten(1, 2)
-            if getattr(self, "dual_full_expert_enabled", False):
+            if getattr(self, "dual_full_expert_enabled", False) or getattr(self, "dual_lora_enabled", False):
                 y = self.ffn(
                     ffn_input, memory_token_count=memory_token_count
                 )
@@ -856,6 +859,7 @@ class CausalWanModel(ModelMixin, ConfigMixin):
         self.num_frame_per_block = 1
         self.independent_first_frame = False
         self.dual_full_expert_enabled = False
+        self.dual_lora_enabled = False
 
 
     @staticmethod
@@ -876,8 +880,8 @@ class CausalWanModel(ModelMixin, ConfigMixin):
         return count
 
     def enable_dual_full_expert(self):
-        if self.dual_full_expert_enabled:
-            raise RuntimeError("Dual full experts are already enabled")
+        if self.dual_full_expert_enabled or self.dual_lora_enabled:
+            raise RuntimeError("Dual experts are already enabled")
         if self.model_type != 't2v':
             raise NotImplementedError("Dual full experts currently support T2V only")
 
@@ -937,6 +941,28 @@ class CausalWanModel(ModelMixin, ConfigMixin):
 
         self.dual_full_expert_enabled = True
         return memory_params
+
+    def enable_dual_lora(self, rank=256, alpha=256):
+        if self.dual_full_expert_enabled or self.dual_lora_enabled:
+            raise RuntimeError("Dual experts are already enabled")
+        if self.model_type != 't2v':
+            raise NotImplementedError("Dual LoRA currently supports T2V only")
+
+        self.requires_grad_(False)
+        for block in self.blocks:
+            for attention_module in (block.self_attn, block.cross_attn):
+                for name in ("q", "k", "v", "o"):
+                    linear = getattr(attention_module, name)
+                    setattr(attention_module, name, DualLoRALinear(linear, rank, alpha))
+            for index in (0, 2):
+                block.ffn[index] = DualLoRALinear(block.ffn[index], rank, alpha)
+            block.ffn = MemoryRoutedFFN(*block.ffn.children())
+            block.dual_lora_enabled = True
+        self.dual_lora_enabled = True
+        self.dual_lora_config = {"rank": rank, "alpha": alpha, "dropout": 0.0,
+                                 "adapters": ["denoiser", "context_writer"],
+                                 "target_modules": ["self_attn.q/k/v/o", "cross_attn.q/k/v/o", "ffn.0/2"]}
+        return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
 
 
@@ -1236,12 +1262,12 @@ class CausalWanModel(ModelMixin, ConfigMixin):
             x = [torch.cat([u, v], dim=0) for u, v in zip(x, y)]
 
         use_memory_expert = (
-            self.dual_full_expert_enabled and use_memory_expert
+            (self.dual_full_expert_enabled or self.dual_lora_enabled) and use_memory_expert
         )
 
         # embeddings
         patch_embedding = (
-            self.memory_patch_embedding if use_memory_expert
+            self.memory_patch_embedding if self.dual_full_expert_enabled and use_memory_expert
             else self.patch_embedding
         )
         x = [patch_embedding(u.unsqueeze(0)) for u in x]
@@ -1259,18 +1285,18 @@ class CausalWanModel(ModelMixin, ConfigMixin):
         """
 
         memory_token_count = 0
-        if self.dual_full_expert_enabled and use_memory_expert:
+        if use_memory_expert:
             memory_token_count = x.shape[1]
 
 
         # time embeddings
         # with amp.autocast(dtype=torch.float32):
         time_embedding = (
-            self.memory_time_embedding if use_memory_expert
+            self.memory_time_embedding if self.dual_full_expert_enabled and use_memory_expert
             else self.time_embedding
         )
         time_projection = (
-            self.memory_time_projection if use_memory_expert
+            self.memory_time_projection if self.dual_full_expert_enabled and use_memory_expert
             else self.time_projection
         )
         e = time_embedding(
@@ -1287,7 +1313,7 @@ class CausalWanModel(ModelMixin, ConfigMixin):
             for u in context
         ])
         text_embedding = (
-            self.memory_text_embedding if use_memory_expert
+            self.memory_text_embedding if self.dual_full_expert_enabled and use_memory_expert
             else self.text_embedding
         )
         context = text_embedding(padded_context)
@@ -1316,7 +1342,7 @@ class CausalWanModel(ModelMixin, ConfigMixin):
 
         for block_index, block in enumerate(self.blocks):
             block_crossattn_cache = crossattn_cache[block_index]
-            if self.dual_full_expert_enabled:
+            if self.dual_full_expert_enabled or self.dual_lora_enabled:
                 expert_name = (
                     "memory_expert" if use_memory_expert
                     else "generation_expert"
@@ -1350,7 +1376,7 @@ class CausalWanModel(ModelMixin, ConfigMixin):
                 x = block(x, **kwargs)
 
         # head
-        head = self.memory_head if use_memory_expert else self.head
+        head = self.memory_head if self.dual_full_expert_enabled and use_memory_expert else self.head
         x = head(x, e.unflatten(dim=0, sizes=t.shape).unsqueeze(2))
         # unpatchify
         x = self.unpatchify(x, grid_sizes)
@@ -1487,7 +1513,7 @@ class CausalWanModel(ModelMixin, ConfigMixin):
                 torch.cat([u, u.new_zeros(1, seq_lens_clean[0] - u.size(1), u.size(2))], dim=1) for u in clean_x
             ])
 
-            if self.dual_full_expert_enabled:
+            if self.dual_full_expert_enabled or self.dual_lora_enabled:
                 memory_token_count = clean_x.shape[1]
             x = torch.cat([clean_x, x], dim=1)
             if aug_t is None:
@@ -1506,7 +1532,7 @@ class CausalWanModel(ModelMixin, ConfigMixin):
                 e0_clean = self.time_projection(e_clean).unflatten(
                     1, (6, self.dim)).unflatten(dim=0, sizes=t.shape)
             e0 = torch.cat([e0_clean, e0], dim=1)
-        elif self.dual_full_expert_enabled and use_memory_expert:
+        elif (self.dual_full_expert_enabled or self.dual_lora_enabled) and use_memory_expert:
             memory_token_count = x.shape[1]
 
         # arguments
