@@ -29,6 +29,25 @@ __all__ = [
 ]
 
 
+def _sdpa_flash_attention(q, k, v, q_lens, k_lens, dropout_p, softmax_scale, q_scale, causal, window_size, dtype):
+    """flash_attention() computed with PyTorch SDPA, for machines without flash-attn (e.g. Windows). Same attention for the
+    case inference uses: no padding lengths, no window, no dropout; inputs cast to half precision as flash_attention() does,
+    output in q's dtype."""
+    if q_lens is not None or k_lens is not None or tuple(window_size) != (-1, -1) or dropout_p:
+        raise NotImplementedError("flash-attn is not installed; the SDPA fallback supports no padding lengths, windows or dropout")
+    if causal and q.size(1) != k.size(1):
+        raise NotImplementedError("flash-attn is not installed; the SDPA fallback supports causal attention only for equal lengths")
+    half_dtypes = (torch.float16, torch.bfloat16)
+    out_dtype = q.dtype
+    q, k, v = [x if x.dtype in half_dtypes else x.to(dtype) for x in (q, k, v)]
+    q, k = q.to(v.dtype), k.to(v.dtype)
+    if q_scale is not None:
+        q = q * q_scale
+    x = torch.nn.functional.scaled_dot_product_attention(
+        q.transpose(1, 2), k.transpose(1, 2), v.transpose(1, 2), is_causal=causal, scale=softmax_scale)
+    return x.transpose(1, 2).type(out_dtype)
+
+
 def flash_attention(
     q,
     k,
@@ -57,6 +76,8 @@ def flash_attention(
     deterministic:  bool. If True, slightly slower and uses more memory.
     dtype:          torch.dtype. Apply when dtype of q/k/v is not float16/bfloat16.
     """
+    if not (FLASH_ATTN_2_AVAILABLE or FLASH_ATTN_3_AVAILABLE):
+        return _sdpa_flash_attention(q, k, v, q_lens, k_lens, dropout_p, softmax_scale, q_scale, causal, window_size, dtype)
     half_dtypes = (torch.float16, torch.bfloat16)
     assert dtype in half_dtypes
     assert q.device.type == 'cuda' and q.size(-1) <= 256
